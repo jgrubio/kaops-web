@@ -214,15 +214,32 @@
       return !bad;
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       let ok = true;
       form.querySelectorAll('input[required], textarea[required]').forEach(inp => {
         if (!validate(inp)) ok = false;
       });
       if (!ok) return;
-      form.style.display = 'none';
-      success.classList.add('show');
+
+      const btn = form.querySelector('button[type="submit"]');
+      const btnText = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new FormData(form)
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Error al enviar');
+        form.style.display = 'none';
+        success.classList.add('show');
+      } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = btnText; }
+        alert('No pude enviar el mensaje. Probá de nuevo o escribime directo. (' + err.message + ')');
+      }
     });
   }
 
